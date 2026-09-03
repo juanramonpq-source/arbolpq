@@ -1,4 +1,4 @@
-import { getStore } from "@netlify/blobs";
+import { connectLambda, getStore } from "@netlify/blobs";
 
 const STORE_NAME = "arbol-perez-quintanar";
 const TREE_KEY = "tree";
@@ -27,6 +27,10 @@ export async function handler(event) {
   if (method === "OPTIONS") return json(200, { ok: true });
 
   try {
+    // Netlify deploys this legacy handler in Lambda compatibility mode. Give
+    // Blobs the runtime credentials carried by the invocation before opening
+    // the shared store.
+    connectLambda(event);
     const store = getStore({ name: STORE_NAME, consistency: "strong" });
     if (method === "GET") {
       const data = await store.get(TREE_KEY, { type: "json" });
