@@ -1,0 +1,11 @@
+# Árbol Pérez Quintanar — publicación en Netlify (sin cuentas).
+# El árbol compartido se guarda en Netlify Blobs. Si existe DATABASE_URL, se usa Postgres.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NITRO_PRESET = "netlify"
+  VITE_AUTH_ENABLED = "false"

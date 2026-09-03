@@ -1,0 +1,21 @@
+Árbol Pérez Quintanar — publicar en Netlify
+==========================================
+
+En Netlify la familia abre el árbol SIN entrar en Grok.
+Quien tenga el enlace puede verlo y actualizarlo. No hay cuentas.
+
+1. Crea una cuenta gratis en netlify.com
+2. Sube esta carpeta a GitHub (repositorio nuevo, puedes arrastrar los archivos)
+3. En Netlify: Add new site → Import an existing project → elige ese repositorio
+4. Netlify detecta solo esta configuración:
+   - Build command: npm run build
+   - Publish directory: dist
+   - Node 22
+5. Deploy. Te da una dirección tipo https://algo.netlify.app
+6. Pásale esa dirección a tu hermana. No pide permiso ni cuenta.
+
+El árbol se guarda en Netlify (el mismo para todos).
+No hace falta crear una base de datos.
+
+Opcional: si más adelante quieres Postgres, añade DATABASE_URL
+en Site configuration → Environment variables.
