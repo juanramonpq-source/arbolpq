@@ -23,6 +23,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { PersonFormFields } from "@/components/family/PersonFormFields";
 import { createChild, createParents, createPartner, deletePerson, savePerson } from "@/lib/tree/browser-api";
+import { addChild, addParents, addPartner, removePerson, updatePerson } from "@/lib/tree/ops";
+import { writeLocalTree } from "@/lib/tree/persist";
 import {
   ancestorRoots,
   emptyDraft,
@@ -132,7 +134,7 @@ export function PersonDialog({ panel, people, unions, hydrate, onChange }: Perso
         }
         const tree = await savePerson(panel.id, draft);
         hydrate(tree);
-        toast.success("Guardado en el árbol compartido.");
+        toast.success("Guardado en el árbol.");
         close();
         return;
       }
@@ -145,14 +147,14 @@ export function PersonDialog({ panel, people, unions, hydrate, onChange }: Perso
             : { kind: "none" },
         );
         hydrate(result.tree);
-        toast.success("Rama guardada en el árbol compartido.");
+        toast.success("Persona añadida al árbol.");
         onChange({ type: "edit", id: result.focusId });
         return;
       }
       if (panel.type === "partner") {
         const result = await createPartner(panel.personId, draft);
         hydrate(result.tree);
-        toast.success("Pareja guardada en el árbol compartido.");
+        toast.success("Pareja añadida al árbol.");
         onChange({ type: "edit", id: result.focusId });
         return;
       }
@@ -163,14 +165,50 @@ export function PersonDialog({ panel, people, unions, hydrate, onChange }: Perso
         }
         const result = await createParents(panel.personId, parentA, parentB);
         hydrate(result.tree);
-        toast.success("Progenitores guardados en el árbol compartido.");
+        toast.success("Progenitores añadidos al árbol.");
         onChange({ type: "edit", id: result.focusId });
       }
     } catch (error) {
+      const fallback = applyLocally();
+      if (fallback) {
+        writeLocalTree(fallback.tree);
+        hydrate(fallback.tree);
+        toast.success("Persona añadida al árbol.");
+        if (fallback.focusId) onChange({ type: "edit", id: fallback.focusId });
+        else close();
+        return;
+      }
       toast.error(errorMessage(error, "No se pudo guardar. Inténtalo de nuevo."));
     } finally {
       setSaving(false);
     }
+  }
+
+  function applyLocally(): { tree: FamilyData; focusId?: string } | null {
+    const current = treeRef.current;
+    try {
+      if (panel.type === "edit") {
+        return { tree: updatePerson(current, panel.id, draft) };
+      }
+      if (panel.type === "child") {
+        return addChild(
+          current,
+          panel.parentId,
+          draft,
+          includePartner && !partner ? { kind: "new", draft: partnerDraft } : { kind: "none" },
+        );
+      }
+      if (panel.type === "partner") {
+        return addPartner(current, panel.personId, draft);
+      }
+      if (panel.type === "parents") {
+        const second = parentB.givenName.trim() ? parentB : null;
+        return addParents(current, panel.personId, parentA, second);
+      }
+    } catch {
+      return null;
+    }
+    return null;
   }
 
   async function onDelete() {
@@ -179,11 +217,20 @@ export function PersonDialog({ panel, people, unions, hydrate, onChange }: Perso
     try {
       const tree = await deletePerson(panel.id);
       hydrate(tree);
-      toast.success("Persona eliminada del árbol compartido.");
+      toast.success("Persona eliminada del árbol.");
       setConfirmDelete(false);
       close();
     } catch (error) {
-      toast.error(errorMessage(error, "No se pudo eliminar."));
+      try {
+        const tree = removePerson(treeRef.current, panel.id);
+        writeLocalTree(tree);
+        hydrate(tree);
+        toast.success("Persona eliminada del árbol.");
+        setConfirmDelete(false);
+        close();
+      } catch {
+        toast.error(errorMessage(error, "No se pudo eliminar."));
+      }
     } finally {
       setSaving(false);
     }

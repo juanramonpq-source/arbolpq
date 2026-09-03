@@ -10,14 +10,16 @@ import { addChild, addParents, addPartner, removePerson, updatePerson } from "./
 import { loadPersistedTree, savePersistedTree } from "./persist";
 import type { FamilyData, OtherParent, PersonDraft } from "./types";
 
-function onNetlifySite(): boolean {
+function useLocalPersistence(): boolean {
   if (typeof window === "undefined") return false;
   const host = window.location.hostname.toLowerCase();
-  return host.endsWith(".netlify.app") || host.endsWith(".netlify.com");
+  if (!host || host === "localhost" || host === "127.0.0.1") return false;
+  if (host.endsWith(".grok.me") || host.endsWith(".vercel.app")) return false;
+  return true;
 }
 
 export async function loadFamily(): Promise<FamilyData> {
-  if (onNetlifySite()) return loadPersistedTree();
+  if (useLocalPersistence()) return loadPersistedTree();
   try {
     return await loadTree();
   } catch {
@@ -30,22 +32,30 @@ export async function createChild(
   draft: PersonDraft,
   other: OtherParent,
 ): Promise<{ tree: FamilyData; focusId: string }> {
-  if (onNetlifySite()) {
-    const result = addChild(await loadPersistedTree(), parentId, draft, other);
-    return { tree: await savePersistedTree(result.tree), focusId: result.focusId };
+  if (!useLocalPersistence()) {
+    try {
+      return await addChildFn({ data: { parentId, draft, other } });
+    } catch {
+      // Netlify / static hosts have no PGLite. Fall through.
+    }
   }
-  return addChildFn({ data: { parentId, draft, other } });
+  const result = addChild(await loadPersistedTree(), parentId, draft, other);
+  return { tree: await savePersistedTree(result.tree), focusId: result.focusId };
 }
 
 export async function createPartner(
   personId: string,
   draft: PersonDraft,
 ): Promise<{ tree: FamilyData; focusId: string }> {
-  if (onNetlifySite()) {
-    const result = addPartner(await loadPersistedTree(), personId, draft);
-    return { tree: await savePersistedTree(result.tree), focusId: result.focusId };
+  if (!useLocalPersistence()) {
+    try {
+      return await addPartnerFn({ data: { personId, draft } });
+    } catch {
+      // Fall through to local save.
+    }
   }
-  return addPartnerFn({ data: { personId, draft } });
+  const result = addPartner(await loadPersistedTree(), personId, draft);
+  return { tree: await savePersistedTree(result.tree), focusId: result.focusId };
 }
 
 export async function createParents(
@@ -53,23 +63,35 @@ export async function createParents(
   parentA: PersonDraft,
   parentB: PersonDraft | null,
 ): Promise<{ tree: FamilyData; focusId: string }> {
-  if (onNetlifySite()) {
-    const result = addParents(await loadPersistedTree(), personId, parentA, parentB);
-    return { tree: await savePersistedTree(result.tree), focusId: result.focusId };
+  if (!useLocalPersistence()) {
+    try {
+      return await addParentsFn({ data: { personId, parentA, parentB } });
+    } catch {
+      // Fall through to local save.
+    }
   }
-  return addParentsFn({ data: { personId, parentA, parentB } });
+  const result = addParents(await loadPersistedTree(), personId, parentA, parentB);
+  return { tree: await savePersistedTree(result.tree), focusId: result.focusId };
 }
 
 export async function savePerson(id: string, draft: PersonDraft): Promise<FamilyData> {
-  if (onNetlifySite()) {
-    return savePersistedTree(updatePerson(await loadPersistedTree(), id, draft));
+  if (!useLocalPersistence()) {
+    try {
+      return await updatePersonFn({ data: { id, draft } });
+    } catch {
+      // Fall through to local save.
+    }
   }
-  return updatePersonFn({ data: { id, draft } });
+  return savePersistedTree(updatePerson(await loadPersistedTree(), id, draft));
 }
 
 export async function deletePerson(id: string): Promise<FamilyData> {
-  if (onNetlifySite()) {
-    return savePersistedTree(removePerson(await loadPersistedTree(), id));
+  if (!useLocalPersistence()) {
+    try {
+      return await removePersonFn({ data: { id } });
+    } catch {
+      // Fall through to local save.
+    }
   }
-  return removePersonFn({ data: { id } });
+  return savePersistedTree(removePerson(await loadPersistedTree(), id));
 }
