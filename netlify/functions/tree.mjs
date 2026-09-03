@@ -3,14 +3,18 @@ import { getStore } from "@netlify/blobs";
 const STORE_NAME = "arbol-perez-quintanar";
 const TREE_KEY = "tree";
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
+function json(status, data) {
+  return {
+    statusCode: status,
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "GET,PUT,POST,OPTIONS",
+      "access-control-allow-headers": "content-type",
     },
-  });
+    body: JSON.stringify(data),
+  };
 }
 
 function isFamilyData(value) {
@@ -18,33 +22,29 @@ function isFamilyData(value) {
   return Array.isArray(value.people) && Array.isArray(value.unions);
 }
 
-async function store() {
+async function blobs() {
   return getStore({ name: STORE_NAME, consistency: "strong" });
 }
 
-export default async (request) => {
+export async function handler(event) {
+  const method = String(event.httpMethod || event.method || "GET").toUpperCase();
+  if (method === "OPTIONS") return json(200, { ok: true });
+
   try {
-    const blobs = await store();
-    if (request.method === "GET") {
-      const data = await blobs.get(TREE_KEY, { type: "json" });
-      return json(isFamilyData(data) ? data : { people: [], unions: [] });
+    const store = await blobs();
+    if (method === "GET") {
+      const data = await store.get(TREE_KEY, { type: "json" });
+      return json(200, isFamilyData(data) ? data : { people: [], unions: [] });
     }
-    if (request.method === "PUT" || request.method === "POST") {
-      const body = await request.json();
-      if (!isFamilyData(body)) {
-        return json({ error: "Árbol no válido." }, 400);
-      }
-      await blobs.setJSON(TREE_KEY, body);
-      return json(body);
+    if (method === "PUT" || method === "POST") {
+      const body = JSON.parse(event.body || "{}");
+      if (!isFamilyData(body)) return json(400, { error: "Árbol no válido." });
+      await store.setJSON(TREE_KEY, body);
+      return json(200, body);
     }
-    return json({ error: "Método no permitido." }, 405);
+    return json(405, { error: "Método no permitido." });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error";
-    return json({ error: message }, 500);
+    return json(500, { error: message });
   }
-};
-
-export const config = {
-  path: "/api/tree",
-  method: ["GET", "PUT", "POST"],
-};
+}

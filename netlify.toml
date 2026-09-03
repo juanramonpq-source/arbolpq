@@ -1,8 +1,9 @@
 # Árbol Pérez Quintanar — publicación en Netlify (sin cuentas).
-# El árbol compartido se guarda en Netlify Blobs. Si existe DATABASE_URL, se usa Postgres.
+# El árbol compartido se guarda en Netlify Blobs. Cada navegador también
+# guarda una copia local para que añadir personas no falle si la API tarda.
 
 [build]
-  command = "npm run build"
+  command = "npm run build:netlify"
   publish = "dist"
 
 [build.environment]
@@ -12,6 +13,10 @@
 
 [functions]
   directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[functions.tree]
+  external_node_modules = ["@netlify/blobs"]
 
 [[redirects]]
   from = "/api/tree"

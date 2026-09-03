@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Descargar ArbolPQ</title>
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        font-family: Figtree, system-ui, sans-serif;
+        background: linear-gradient(180deg, #eef4fa, #d7e4f2);
+        color: #16324f;
+      }
+      main {
+        width: min(28rem, calc(100vw - 2rem));
+        background: #fff;
+        border-radius: 1.25rem;
+        padding: 1.75rem 1.5rem;
+        box-shadow: 0 18px 50px rgba(22, 50, 79, 0.12);
+        text-align: center;
+      }
+      h1 { margin: 0 0 0.4rem; font-size: 1.45rem; }
+      p { margin: 0 0 1.25rem; color: #4a6580; line-height: 1.45; }
+      button, a.btn {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        border: 0;
+        border-radius: 0.9rem;
+        padding: 0.95rem 1rem;
+        font: inherit;
+        font-weight: 650;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      button {
+        background: #2f5d8a;
+        color: #fff;
+        margin-bottom: 0.65rem;
+      }
+      a.btn { background: #e8eef5; color: #16324f; }
+      .ok { color: #1f7a45; font-weight: 650; min-height: 1.4em; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Archivos a actualizar</h1>
+      <p>Pulsa el botón azul. Si no baja, usa el segundo enlace o ábrelo en una pestaña nueva.</p>
+      <button type="button" id="go">Descargar arbolpq-nombre.zip</button>
+      <a class="btn" href="/arbolpq-nombre.zip" download="arbolpq-nombre.zip">Enlace directo del zip</a>
+      <p class="ok" id="msg"></p>
+    </main>
+    <script>
+      async function save() {
+        const msg = document.getElementById("msg");
+        try {
+          const res = await fetch("/arbolpq-nombre.zip", { cache: "no-store" });
+          if (!res.ok) throw new Error("no encontrado");
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "arbolpq-nombre.zip";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1500);
+          msg.textContent = "Si no aparece abajo, pulsa el enlace directo.";
+        } catch (err) {
+          msg.textContent = "Usa el enlace directo debajo.";
+        }
+      }
+      document.getElementById("go").addEventListener("click", save);
+      save();
+    </script>
+  </body>
+</html>
