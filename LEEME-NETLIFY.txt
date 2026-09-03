@@ -1,18 +1,16 @@
 Árbol Pérez Quintanar — publicar en Netlify
 ==========================================
 
-En Netlify la familia abre el árbol SIN entrar en Grok.
-Quien tenga el enlace puede verlo y actualizarlo. No hay cuentas.
+IMPORTANTE: hay que sustituir TODO el repositorio, no solo 4 archivos.
+Si solo subes unos cuantos, Netlify sigue con el código viejo y al añadir
+personas aparece «No se pudo guardar el árbol».
 
-Si https://arbolpq.netlify.app sigue en error, hay que VOLVER A SUBIR
-estos archivos al mismo repositorio de GitHub (sustituyen a los viejos).
-Netlify se redespliega solo. Cuando termine, recarga la web.
+1. En GitHub abre el repositorio
+2. Sube TODO lo de este zip a la raíz
+   (package.json, netlify.toml y la carpeta netlify/ tienen que verse)
+3. Commit changes
+4. Espera a que Netlify ponga Published
+5. En el teléfono recarga https://arbolpq.netlify.app (o bórrala y ábrela de nuevo)
 
-1. En GitHub, entra en el repositorio
-2. Add file → Upload files
-3. Arrastra TODO lo de esta carpeta (package.json y netlify.toml en la raíz)
-4. Commit changes
-5. En Netlify espera a Published y abre https://arbolpq.netlify.app
-
-El árbol se guarda en Netlify (el mismo para todos).
-No hace falta crear una base de datos.
+Después de eso, Añadir al árbol guarda en este dispositivo al momento.
+Cuando Netlify tenga la función /api/tree, el mismo árbol lo verá toda la familia.
