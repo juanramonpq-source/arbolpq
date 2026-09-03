@@ -31,7 +31,9 @@ export async function handler(event) {
     // Blobs the runtime credentials carried by the invocation before opening
     // the shared store.
     connectLambda(event);
-    const store = getStore({ name: STORE_NAME, consistency: "strong" });
+    // Lambda compatibility invocations provide the edge Blobs endpoint. Its
+    // reads are shared between devices, but do not support strong consistency.
+    const store = getStore(STORE_NAME);
     if (method === "GET") {
       const data = await store.get(TREE_KEY, { type: "json" });
       return json(200, isFamilyData(data) ? data : { people: [], unions: [] });
