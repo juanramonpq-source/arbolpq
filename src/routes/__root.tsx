@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Árbol Pérez Quintanar";
+const HOME_SCREEN_NAME = "ArbolPQ";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -19,7 +20,8 @@ export const Route = createRootRoute({
           "Árbol genealógico de la familia Pérez Quintanar. Añade ramas, edita nombres y conserva la memoria familiar.",
       },
       { name: "theme-color", content: "#2F5D8A" },
-      { name: "apple-mobile-web-app-title", content: APP_NAME },
+      { name: "apple-mobile-web-app-title", content: HOME_SCREEN_NAME },
+      { name: "application-name", content: HOME_SCREEN_NAME },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
