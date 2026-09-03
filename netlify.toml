@@ -9,3 +9,12 @@
   NODE_VERSION = "22"
   NITRO_PRESET = "netlify"
   VITE_AUTH_ENABLED = "false"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/tree"
+  to = "/.netlify/functions/tree"
+  status = 200
+  force = true
