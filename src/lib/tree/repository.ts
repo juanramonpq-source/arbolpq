@@ -1,7 +1,8 @@
-import { getSql, type Sql } from "@/lib/db";
+import { isPgliteAssetError, useDocumentStore } from "@/lib/runtime-env";
 import { createSeed } from "@/lib/tree/seed";
 import type { FamilyData, Person, PersonDraft, Sex, Union } from "@/lib/tree/types";
 import type { OtherParent } from "@/lib/tree/types";
+import type { Sql } from "@/lib/db";
 
 type PersonRow = {
   id: string;
@@ -36,6 +37,21 @@ function uid(): string {
   return crypto.randomUUID();
 }
 
+async function sqlClient(): Promise<Sql> {
+  const { getSql } = await import("@/lib/db");
+  return getSql();
+}
+
+async function viaDocument<T>(blobs: () => Promise<T>, sqlFn: () => Promise<T>): Promise<T> {
+  if (useDocumentStore()) return blobs();
+  try {
+    return await sqlFn();
+  } catch (error) {
+    if (isPgliteAssetError(error) || useDocumentStore()) return blobs();
+    throw error;
+  }
+}
+
 function fromDraft(draft: PersonDraft): Person {
   return {
     id: uid(),
@@ -46,14 +62,6 @@ function fromDraft(draft: PersonDraft): Person {
     deathYear: draft.deathYear.trim(),
     notes: draft.notes.trim(),
   };
-}
-
-/** Netlify without Postgres: persist the tree in Netlify Blobs (shared, no login). */
-function useDocumentStore(): boolean {
-  if (typeof process === "undefined") return false;
-  if (process.env.DATABASE_URL?.trim()) return false;
-  const flag = process.env.NETLIFY;
-  return flag === "true" || flag === "1";
 }
 
 async function insertPerson(sql: Sql, person: Person) {
@@ -134,13 +142,21 @@ async function ensureSeeded(sql: Sql) {
 }
 
 export async function loadFamilyTree(): Promise<FamilyData> {
-  if (useDocumentStore()) {
-    const { loadDocumentTree } = await import("./document-store");
-    return loadDocumentTree();
+  try {
+    return await viaDocument(
+      async () => {
+        const { loadDocumentTree } = await import("./document-store");
+        return loadDocumentTree();
+      },
+      async () => {
+        const sql = await sqlClient();
+        await ensureSeeded(sql);
+        return readTree(sql);
+      },
+    );
+  } catch {
+    return createSeed();
   }
-  const sql = await getSql();
-  await ensureSeeded(sql);
-  return readTree(sql);
 }
 
 export async function addChildToTree(
@@ -148,13 +164,23 @@ export async function addChildToTree(
   draft: PersonDraft,
   other: OtherParent,
 ): Promise<{ tree: FamilyData; focusId: string }> {
-  if (useDocumentStore()) {
-    const { mutateDocument } = await import("./document-store");
-    const { addChild } = await import("./ops");
-    return mutateDocument((tree) => addChild(tree, parentId, draft, other));
-  }
+  return viaDocument(
+    async () => {
+      const { mutateDocument } = await import("./document-store");
+      const { addChild } = await import("./ops");
+      return mutateDocument((tree) => addChild(tree, parentId, draft, other));
+    },
+    async () => addChildSql(parentId, draft, other),
+  );
+}
+
+async function addChildSql(
+  parentId: string,
+  draft: PersonDraft,
+  other: OtherParent,
+): Promise<{ tree: FamilyData; focusId: string }> {
   if (!draft.givenName.trim()) throw new Error("El nombre es obligatorio.");
-  const sql = await getSql();
+  const sql = await sqlClient();
   await ensureSeeded(sql);
   const { people, unions } = await readTree(sql);
   if (!people.some((p) => p.id === parentId)) throw new Error("Persona no encontrada.");
@@ -204,13 +230,22 @@ export async function addPartnerToTree(
   personId: string,
   draft: PersonDraft,
 ): Promise<{ tree: FamilyData; focusId: string }> {
-  if (useDocumentStore()) {
-    const { mutateDocument } = await import("./document-store");
-    const { addPartner } = await import("./ops");
-    return mutateDocument((tree) => addPartner(tree, personId, draft));
-  }
+  return viaDocument(
+    async () => {
+      const { mutateDocument } = await import("./document-store");
+      const { addPartner } = await import("./ops");
+      return mutateDocument((tree) => addPartner(tree, personId, draft));
+    },
+    async () => addPartnerSql(personId, draft),
+  );
+}
+
+async function addPartnerSql(
+  personId: string,
+  draft: PersonDraft,
+): Promise<{ tree: FamilyData; focusId: string }> {
   if (!draft.givenName.trim()) throw new Error("El nombre es obligatorio.");
-  const sql = await getSql();
+  const sql = await sqlClient();
   await ensureSeeded(sql);
   const { people, unions } = await readTree(sql);
   if (!people.some((p) => p.id === personId)) throw new Error("Persona no encontrada.");
@@ -240,15 +275,25 @@ export async function addParentsToTree(
   parentA: PersonDraft,
   parentB: PersonDraft | null,
 ): Promise<{ tree: FamilyData; focusId: string }> {
-  if (useDocumentStore()) {
-    const { mutateDocument } = await import("./document-store");
-    const { addParents } = await import("./ops");
-    return mutateDocument((tree) => addParents(tree, personId, parentA, parentB));
-  }
+  return viaDocument(
+    async () => {
+      const { mutateDocument } = await import("./document-store");
+      const { addParents } = await import("./ops");
+      return mutateDocument((tree) => addParents(tree, personId, parentA, parentB));
+    },
+    async () => addParentsSql(personId, parentA, parentB),
+  );
+}
+
+async function addParentsSql(
+  personId: string,
+  parentA: PersonDraft,
+  parentB: PersonDraft | null,
+): Promise<{ tree: FamilyData; focusId: string }> {
   const father = parentA.givenName.trim() ? parentA : null;
   const mother = parentB?.givenName.trim() ? parentB : null;
   if (!father && !mother) throw new Error("Indica al menos el nombre del padre o de la madre.");
-  const sql = await getSql();
+  const sql = await sqlClient();
   await ensureSeeded(sql);
   const { people, unions } = await readTree(sql);
   if (!people.some((p) => p.id === personId)) throw new Error("Persona no encontrada.");
@@ -280,13 +325,19 @@ export async function addParentsToTree(
 }
 
 export async function updatePersonInTree(id: string, draft: PersonDraft): Promise<FamilyData> {
-  if (useDocumentStore()) {
-    const { mutateDocument } = await import("./document-store");
-    const { updatePerson } = await import("./ops");
-    return mutateDocument((tree) => updatePerson(tree, id, draft));
-  }
+  return viaDocument(
+    async () => {
+      const { mutateDocument } = await import("./document-store");
+      const { updatePerson } = await import("./ops");
+      return mutateDocument((tree) => updatePerson(tree, id, draft));
+    },
+    async () => updatePersonSql(id, draft),
+  );
+}
+
+async function updatePersonSql(id: string, draft: PersonDraft): Promise<FamilyData> {
   if (!draft.givenName.trim()) throw new Error("El nombre es obligatorio.");
-  const sql = await getSql();
+  const sql = await sqlClient();
   await ensureSeeded(sql);
   await sql`
     update people
@@ -306,12 +357,18 @@ export async function updatePersonInTree(id: string, draft: PersonDraft): Promis
 }
 
 export async function removePersonFromTree(id: string): Promise<FamilyData> {
-  if (useDocumentStore()) {
-    const { mutateDocument } = await import("./document-store");
-    const { removePerson } = await import("./ops");
-    return mutateDocument((tree) => removePerson(tree, id));
-  }
-  const sql = await getSql();
+  return viaDocument(
+    async () => {
+      const { mutateDocument } = await import("./document-store");
+      const { removePerson } = await import("./ops");
+      return mutateDocument((tree) => removePerson(tree, id));
+    },
+    async () => removePersonSql(id),
+  );
+}
+
+async function removePersonSql(id: string): Promise<FamilyData> {
+  const sql = await sqlClient();
   await ensureSeeded(sql);
 
   await sql`delete from union_children where child_id = ${id}`;

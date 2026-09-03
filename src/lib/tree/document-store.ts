@@ -15,6 +15,19 @@ async function treeStore() {
   return getStore({ name: STORE_NAME, consistency: "strong" });
 }
 
+function blobsError(error: unknown): Error {
+  const message = error instanceof Error ? error.message : "";
+  if (
+    message.includes("store") ||
+    message.includes("blobs") ||
+    message.includes("NETLIFY") ||
+    message.includes("environment has not been configured")
+  ) {
+    return new Error("No se pudo abrir el árbol en Netlify. Vuelve a publicar el sitio.");
+  }
+  return new Error("No se pudo cargar el árbol compartido.");
+}
+
 export async function loadDocumentTree(): Promise<FamilyData> {
   try {
     const store = await treeStore();
@@ -24,12 +37,17 @@ export async function loadDocumentTree(): Promise<FamilyData> {
     await store.setJSON(TREE_KEY, seed);
     return seed;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    throw new Error(
-      message.includes("store") || message.includes("blobs") || message.includes("NETLIFY")
-        ? "No se pudo abrir el árbol en Netlify. Vuelve a publicar el sitio."
-        : "No se pudo cargar el árbol compartido.",
-    );
+    throw blobsError(error);
+  }
+}
+
+export async function saveDocumentTree(tree: FamilyData): Promise<FamilyData> {
+  try {
+    const store = await treeStore();
+    await store.setJSON(TREE_KEY, tree);
+    return tree;
+  } catch (error) {
+    throw blobsError(error);
   }
 }
 
@@ -40,7 +58,6 @@ export async function mutateDocument<T>(fn: (tree: FamilyData) => T): Promise<T>
     result && typeof result === "object" && "tree" in result
       ? (result as { tree: FamilyData }).tree
       : (result as FamilyData);
-  const store = await treeStore();
-  await store.setJSON(TREE_KEY, next);
+  await saveDocumentTree(next);
   return result;
 }

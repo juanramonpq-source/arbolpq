@@ -17,8 +17,13 @@ const otherParentSchema = z.discriminatedUnion("kind", [
 ]);
 
 export const loadTree = createServerFn({ method: "GET" }).handler(async () => {
-  const { loadFamilyTree } = await import("./repository");
-  return loadFamilyTree();
+  try {
+    const { loadFamilyTree } = await import("./repository");
+    return loadFamilyTree();
+  } catch {
+    const { createSeed } = await import("./seed");
+    return createSeed();
+  }
 });
 
 export const addChildFn = createServerFn({ method: "POST" })

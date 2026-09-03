@@ -1,26 +1,22 @@
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
-
-function isNetlifyRuntime(): boolean {
-  if (typeof process === "undefined") return false;
-  const flag = process.env.NETLIFY;
-  return flag === "true" || flag === "1";
-}
+import { hasDatabaseUrl, isNetlifyRuntime } from "@/lib/runtime-env";
 
 /** Which database backend is active. */
 export type DbSource = "neon" | "pglite";
 
 // An empty/whitespace DATABASE_URL (an easy misconfig in deploy UIs) must mean
 // "unset" — otherwise production would silently run on the PGLite fallback.
-const rawDatabaseUrl =
-  typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
-const databaseUrl =
-  rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl : undefined;
+const databaseUrl = hasDatabaseUrl()
+  ? (typeof process !== "undefined" ? process.env.DATABASE_URL?.trim() : undefined)
+  : undefined;
 
 /**
  * Active backend: real **Neon** when `DATABASE_URL` is set (deployed / configured
  * sandbox), otherwise a local embedded **PGLite** (Postgres compiled to WASM) so
  * the app has a working database even with nothing configured — the live preview
  * included. Swap in Neon later by just setting `DATABASE_URL`; no code changes.
+ *
+ * Netlify without Postgres uses the document store instead — see `useDocumentStore`.
  */
 export const dbSource: DbSource = databaseUrl ? "neon" : "pglite";
 

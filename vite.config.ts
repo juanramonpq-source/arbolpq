@@ -1,5 +1,6 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 import { defineConfig } from "vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -150,10 +151,15 @@ function nitroPreset(): "netlify" | "vercel" {
   return "vercel";
 }
 
+const pgliteStub = fileURLToPath(new URL("./src/lib/pglite-stub.ts", import.meta.url));
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
-export default defineConfig(({ command, isPreview }) => ({
+export default defineConfig(({ command, isPreview }) => {
+  const preset = nitroPreset();
+  const netlifyBuild = preset === "netlify";
+  return {
   server: {
     host: "0.0.0.0",
     port: 8080,
@@ -166,6 +172,18 @@ export default defineConfig(({ command, isPreview }) => ({
   },
   resolve: { tsconfigPaths: true },
   plugins: [
+    ...(netlifyBuild
+      ? [
+          {
+            name: "pglite-stub-netlify",
+            enforce: "pre" as const,
+            resolveId(id: string) {
+              if (id === "@electric-sql/pglite") return pgliteStub;
+              return null;
+            },
+          } satisfies Plugin,
+        ]
+      : []),
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
     authPopupPlugin(),
@@ -178,7 +196,7 @@ export default defineConfig(({ command, isPreview }) => ({
     ...(command === "build" || isPreview
       ? [
           nitro({
-            preset: nitroPreset(),
+            preset,
             // Auto-registers server/middleware/* (the PWA install page +
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
@@ -188,4 +206,5 @@ export default defineConfig(({ command, isPreview }) => ({
       : []),
     viteReact(),
   ],
-}));
+};
+});

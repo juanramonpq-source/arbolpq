@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { PersonFormFields } from "@/components/family/PersonFormFields";
-import { addChildFn, addParentsFn, addPartnerFn, removePersonFn, updatePersonFn } from "@/lib/tree/api";
+import { createChild, createParents, createPartner, deletePerson, savePerson } from "@/lib/tree/browser-api";
 import {
   ancestorRoots,
   emptyDraft,
@@ -130,30 +130,27 @@ export function PersonDialog({ panel, people, unions, hydrate, onChange }: Perso
           toast.error("El nombre es obligatorio.");
           return;
         }
-        const tree = await updatePersonFn({ data: { id: panel.id, draft } });
+        const tree = await savePerson(panel.id, draft);
         hydrate(tree);
         toast.success("Guardado en el árbol compartido.");
         close();
         return;
       }
       if (panel.type === "child") {
-        const result = await addChildFn({
-          data: {
-            parentId: panel.parentId,
-            draft,
-            other:
-              includePartner && !partner
-                ? { kind: "new", draft: partnerDraft }
-                : { kind: "none" },
-          },
-        });
+        const result = await createChild(
+          panel.parentId,
+          draft,
+          includePartner && !partner
+            ? { kind: "new", draft: partnerDraft }
+            : { kind: "none" },
+        );
         hydrate(result.tree);
         toast.success("Rama guardada en el árbol compartido.");
         onChange({ type: "edit", id: result.focusId });
         return;
       }
       if (panel.type === "partner") {
-        const result = await addPartnerFn({ data: { personId: panel.personId, draft } });
+        const result = await createPartner(panel.personId, draft);
         hydrate(result.tree);
         toast.success("Pareja guardada en el árbol compartido.");
         onChange({ type: "edit", id: result.focusId });
@@ -164,13 +161,7 @@ export function PersonDialog({ panel, people, unions, hydrate, onChange }: Perso
           toast.error("Indica al menos el nombre del padre o de la madre.");
           return;
         }
-        const result = await addParentsFn({
-          data: {
-            personId: panel.personId,
-            parentA,
-            parentB,
-          },
-        });
+        const result = await createParents(panel.personId, parentA, parentB);
         hydrate(result.tree);
         toast.success("Progenitores guardados en el árbol compartido.");
         onChange({ type: "edit", id: result.focusId });
@@ -186,7 +177,7 @@ export function PersonDialog({ panel, people, unions, hydrate, onChange }: Perso
     if (panel.type !== "edit" || saving) return;
     setSaving(true);
     try {
-      const tree = await removePersonFn({ data: { id: panel.id } });
+      const tree = await deletePerson(panel.id);
       hydrate(tree);
       toast.success("Persona eliminada del árbol compartido.");
       setConfirmDelete(false);

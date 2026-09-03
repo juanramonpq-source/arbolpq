@@ -33,7 +33,7 @@ import { PersonDialog } from "@/components/family/PersonDialog";
 import { TreeCanvas } from "@/components/family/TreeCanvas";
 import { TreeMark } from "@/components/family/TreeMark";
 import type { Panel } from "@/components/family/panel";
-import { loadTree } from "@/lib/tree/api";
+import { loadFamily } from "@/lib/tree/browser-api";
 import { copyText, familyShare } from "@/lib/tree/share";
 import type { FamilyData } from "@/lib/tree/types";
 
@@ -90,7 +90,7 @@ export function FamilyApp({ initial }: { initial: FamilyData }) {
       if (document.visibilityState === "hidden") return;
       const gen = generation.current;
       try {
-        const next = await loadTree();
+        const next = await loadFamily();
         if (cancelled || generation.current !== gen) return;
         if (!treesEqual(treeRef.current, next)) {
           treeRef.current = next;
@@ -105,6 +105,7 @@ export function FamilyApp({ initial }: { initial: FamilyData }) {
       if (document.visibilityState === "visible") void refresh();
     };
     document.addEventListener("visibilitychange", onVis);
+    void refresh();
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -160,14 +161,6 @@ export function FamilyApp({ initial }: { initial: FamilyData }) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <a
-        href="/arbol-perez-quintanar-netlify.zip"
-        download="arbol-perez-quintanar-netlify.zip"
-        className="flex min-h-11 items-center justify-center gap-2 bg-primary px-3 text-sm font-medium text-primary-foreground"
-      >
-        <Download className="size-4" />
-        Descargar zip para GitHub
-      </a>
       <header className="sticky top-0 z-20 border-b border-border/80 bg-background/90">
         <div className="flex items-center gap-3 px-3 py-2.5 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">

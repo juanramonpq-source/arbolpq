@@ -40,6 +40,7 @@ import { emailAndPasswordEnabled } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
+import { isNetlifyRuntime } from "../runtime-env";
 import {
   GROK_ISSUER_DEFAULT,
   PREVIEW_ALLOWED_HOSTS,
@@ -48,7 +49,10 @@ import {
 } from "./preview";
 
 // Kick (and share) PGLite bootstrap as soon as the auth server module loads.
-void ensureDbReady();
+// Netlify uses Blobs for the family tree — never open pglite.data there.
+if (!isNetlifyRuntime()) {
+  void ensureDbReady();
+}
 
 /**
  * Preview secret must outlive module reloads: PGLite (and its session rows) is
@@ -143,7 +147,9 @@ const grokUserInfoUrl = `${issuerBase}/api/auth/oauth2/userinfo`;
 // the app turns sign-in on.
 const database = databaseUrl
   ? new Pool({ connectionString: databaseUrl })
-  : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
+  : isNetlifyRuntime()
+    ? undefined
+    : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
 
 /** Session token cookie name — also read by the live-preview popup completion page. */
 export const SESSION_TOKEN_COOKIE = "__Host-grok-auth.session_token";
@@ -177,7 +183,7 @@ export const auth = betterAuth({
   // Deployed apps inject BETTER_AUTH_SECRET. Preview: process-stable secret on
   // globalThis so HMR doesn't invalidate PGLite-backed sessions (see above).
   secret: env("BETTER_AUTH_SECRET") ?? previewAuthSecret(),
-  database,
+  ...(database ? { database } : {}),
 
   // CSRF / origin check for credentialed auth POSTs (email sign-up/sign-in, …).
   // See `trustedOrigins` construction above — must cover live preview hosts AND
