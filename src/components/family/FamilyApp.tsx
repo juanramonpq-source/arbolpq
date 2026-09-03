@@ -163,6 +163,7 @@ export function FamilyApp({ initial }: { initial: FamilyData }) {
     <div className="flex h-dvh flex-col overflow-hidden">
       <header className="sticky top-0 z-20 border-b border-border/80 bg-background/90">
         <div className="flex items-center gap-3 px-3 py-2.5 sm:px-5">
+        <div className="flex items-center gap-3 px-3 py-2.5 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <TreeMark className="size-9" />
             <div className="min-w-0">
@@ -249,8 +250,8 @@ export function FamilyApp({ initial }: { initial: FamilyData }) {
                 <DropdownMenuItem
                   onSelect={() => {
                     const a = document.createElement("a");
-                    a.href = "/arbol-perez-quintanar-netlify.zip";
-                    a.download = "arbol-perez-quintanar-netlify.zip";
+                    a.href = "/arbolpq-nombre.zip";
+                    a.download = "arbolpq-nombre.zip";
                     a.click();
                   }}
                 >
@@ -341,7 +342,7 @@ export function FamilyApp({ initial }: { initial: FamilyData }) {
 
           <DialogFooter>
             <Button type="button" variant={share.isPublic ? "secondary" : "default"} asChild>
-              <a href="/arbol-perez-quintanar-netlify.zip" download="arbol-perez-quintanar-netlify.zip">
+              <a href="/descargar.html">
                 <Download />
                 Descargar zip
               </a>

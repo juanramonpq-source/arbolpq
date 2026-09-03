@@ -151,56 +151,29 @@ export function stripInstallParams(url) {
   return rest ? `${path}?${rest}` : path;
 }
 
-export function homeScreenName(site = {}, hostHeader = "") {
-  const short = String(site.shortName ?? "").trim();
-  if (short) return short;
-  const title = String(site.title ?? "").trim();
-  if (title) return title;
-  return appNameFromHost(hostHeader);
-}
-
-export function renderInstallPageHtml(template, { host, url, site } = {}) {
-  const resolvedSite = site && typeof site === "object" ? site : readOgSite();
+export function renderInstallPageHtml(template, { host, url } = {}) {
   return String(template)
-    .replaceAll("{{APP_NAME}}", escapeHtml(homeScreenName(resolvedSite, host)))
+    .replaceAll("{{APP_NAME}}", escapeHtml(appNameFromHost(host)))
     .replaceAll("{{APP_URL}}", escapeHtml(stripInstallParams(url)));
 }
 
-export function renderWebManifest(hostHeader, site) {
-  const resolved = site && typeof site === "object" ? site : readOgSite();
-  const shortName = homeScreenName(resolved, hostHeader);
-  const name = String(resolved.title ?? "").trim() || shortName;
+export function renderWebManifest(hostHeader) {
+  const name = appNameFromHost(hostHeader);
   return JSON.stringify(
     {
       name,
-      short_name: shortName,
+      short_name: name,
       id: "/",
       start_url: "/",
       scope: "/",
       display: "standalone",
-      background_color: "#EEF2F7",
-      theme_color: "#2F5D8A",
+      background_color: "#000000",
+      theme_color: "#000000",
       icons: [
-        {
-          src: "/icon-180.png",
-          sizes: "180x180",
-          type: "image/png",
-        },
         {
           src: "/__grok/icon-180.png",
           sizes: "180x180",
           type: "image/png",
-        },
-        {
-          src: "/icon-192.png",
-          sizes: "192x192",
-          type: "image/png",
-        },
-        {
-          src: "/icon-512.png",
-          sizes: "512x512",
-          type: "image/png",
-          purpose: "any",
         },
       ],
     },
@@ -459,10 +432,9 @@ export function injectGrokPwaHead(html, ctx = {}) {
     host,
     documentTitle,
   );
-  const screenName = homeScreenName(site, host);
   let next = stripShareMetaTags(html);
 
-  const missing = grokPwaHeadTags(screenName)
+  const missing = grokPwaHeadTags(appName)
     .filter(([key]) => {
       if (key === "manifest") return !next.includes('href="/__grok/manifest.webmanifest"');
       if (key === "apple-touch-icon") return !next.includes('href="/__grok/icon-180.png"');
