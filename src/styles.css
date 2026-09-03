@@ -1,0 +1,129 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", ui-serif, Georgia, "Times New Roman", serif;
+
+  --color-background: #eef2f7;
+  --color-foreground: #1b2a41;
+  --color-card: #ffffff;
+  --color-card-foreground: #1b2a41;
+  --color-primary: #2f5d8a;
+  --color-primary-foreground: #f4f7fb;
+  --color-muted: #d9e2ec;
+  --color-muted-foreground: #5a6e82;
+  --color-border: #c5d0dc;
+  --color-input: #c5d0dc;
+  --color-ring: #2f5d8a;
+  --color-accent: #4a7eab;
+  --color-accent-foreground: #f4f7fb;
+  --color-secondary: #e4ebf3;
+  --color-secondary-foreground: #1b2a41;
+  --color-destructive: #8f3a3a;
+  --color-destructive-foreground: #fdf6f6;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1b2a41;
+  --color-line: #8aa0b8;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius: 0.75rem;
+
+  --shadow-card:
+    0 0 0 1px color-mix(in oklab, var(--color-foreground) 8%, transparent),
+    0 1px 2px -1px color-mix(in oklab, var(--color-foreground) 8%, transparent),
+    0 6px 16px -8px color-mix(in oklab, var(--color-foreground) 10%, transparent);
+  --shadow-card-hover:
+    0 0 0 1px color-mix(in oklab, var(--color-foreground) 12%, transparent),
+    0 1px 2px -1px color-mix(in oklab, var(--color-foreground) 10%, transparent),
+    0 10px 22px -10px color-mix(in oklab, var(--color-foreground) 16%, transparent);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--color-background);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, #f7f9fc 0%, transparent 60%);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialog-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

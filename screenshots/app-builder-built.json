@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Árbol Pérez Quintanar",
+      "hasCanvas": false,
+      "bodyTextLen": 716,
+      "bodyTextHash": "b4f0588f4dee690f1a7f30867f696af72c9bb2d59953cbbcf20422624d1db64b",
+      "bodyTextPrefix": "Árbol Pérez Quintanar Abierto a quien tenga el enlace · 8 person",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Árbol Pérez Quintanar",
+      "hasCanvas": false,
+      "bodyTextLen": 671,
+      "bodyTextHash": "725c2bf3f5bcc5a5063fd45e73666ff6306704e8d23184ac5458233f6ae1d8f0",
+      "bodyTextPrefix": "Árbol Pérez Quintanar GENERACIÓN I · ABUELOS GENERACIÓN II · PAD",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
